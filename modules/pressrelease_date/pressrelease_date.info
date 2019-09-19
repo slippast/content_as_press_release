@@ -1,0 +1,19 @@
+; $Id:$
+name = Press Release - Release Date
+description = Release Date Field for Press Releases
+package = Press Release
+core = 7.x
+files[] = pressrelease_date.module
+files[] = pressrelease_date.functions.inc
+
+dependencies[] = node
+dependencies[] = field
+dependencies[] = date_api
+dependencies[] = date
+dependencies[] = date_popup
+
+; Information added by drupal.org packaging script on 2011-01-12
+version = "7.x-1.0-dev"
+core = "7.x"
+project = "pressrelease_date"
+datestamp = "1294805790"

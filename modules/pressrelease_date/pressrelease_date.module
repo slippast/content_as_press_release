@@ -1,0 +1,48 @@
+<?php
+/**
+ * Implements hook_field_info().
+ */
+function pressrelease_date_field_info() {
+  return array(
+    'kued_pressrelease' => array(
+      'label' => t('Pressrelease Date'),
+      'description' => t('Release Date for Press Releases'),
+      'default_widget' => 'pressrelease_date_widget',
+      'default_formatter' => 'pressrelease_date_formatter',
+    ),
+  );
+}
+
+
+
+/**
+ * Implements hook_field_info().
+ */
+/*
+
+function pressrelease_field_info(){
+  // Check if Press Release Dates field is already created.
+  if (!field_info_field('field_pressrelease_dates')) {
+	field_info_cache_clear();
+	$field = array(
+      'field_name' => 'field_pressrelease_dates',
+      'type' => 'date',
+      'cardinality' => 1
+    );
+    field_create_field($field);
+    // Press Release Dates field
+    $fields['field_pressrelease_dates'] = array(
+        'label' => t('Press Release Dates'),
+        'description' => t('Press Release Dates'),
+        'settings' => array(),
+        'instance_settings' => array(),
+        'default_widget' => 'pressrelease_hidden',
+        'default_formatter' => 'MYMODULE_rating',
+    );
+
+    return $fields; # Get all field types with: field_info_field_types()
+	
+	}
+}
+
+*/

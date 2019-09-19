@@ -1,0 +1,375 @@
+<?php
+//delete from  `drupal7`.`system` where name like 'pressrelease'
+function pressrelease_schema() {
+	$schema['pressrelease_group'] = array(
+    'description' => t('Press Release Group details.'),
+    'fields' => array(
+      'group_id' => array(
+        'description' => t('The primary identifier for a Group entry.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'title' => array(
+        'description' => t('The title of the Group.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'description' => array(
+        'description' => t('Description of the Group.'),
+        'type' => 'text',
+				'size' => 'normal'),
+      'created' => array(
+        'description' => t('The Group creation timestamp.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'modified' => array(
+        'description' => t('The Group modified timestamp.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'deleted' => array(
+        'description' => t('Has this Group been Deleted?'),
+        'type' => 'int',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => 0),
+      'default_template' => array(
+        'description' => t('If there is a default template it is set here.'),
+        'type' => 'int',
+				'length' => 10,
+        'not null' => TRUE,
+        'default' => 0),
+      'disable_content' => array(
+        'description' => t('Disable content types for this Group.'),
+        'type' => 'blob',
+				'size' => 'normal'),
+      'disable_roles' => array(
+        'description' => t('Disable roles types for this Group.'),
+        'type' => 'blob',
+				'size' => 'normal'),
+      ),
+
+    'unique keys' => array(
+      'group_id' => array('group_id')
+      ),
+    'primary key' => array('group_id'),
+    );
+
+	$schema['pressrelease_entity_connect'] = array(
+    'description' => t('List of Entities connected to a Group.'),
+    'fields' => array(
+      'entity_connect_id' => array(
+        'description' => t('The primary identifier for a Group entity connection.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'group_id' => array(
+        'description' => t('Connected Group.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'entity_id' => array(
+        'description' => t('Connected Entity.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+			),
+    'unique keys' => array(
+      'entity_connect_id' => array('entity_connect_id')
+      ),
+    'primary key' => array('entity_connect_id'),
+    );
+
+	$schema['pressrelease_user_connect'] = array(
+    'description' => t('List of User connected to a Group.'),
+    'fields' => array(
+      'user_connect_id' => array(
+        'description' => t('The primary identifier for a Group entity connection.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'group_id' => array(
+        'description' => t('Connected Group.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'user_id' => array(
+        'description' => t('Connected User.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+			),
+    'unique keys' => array(
+      'user_connect_id' => array('user_connect_id')
+      ),
+    'primary key' => array('user_connect_id'),
+    );
+
+	$schema['pressrelease_template'] = array(
+    'description' => t('Press Release Template.'),
+    'fields' => array(
+      'template_id' => array(
+        'description' => t('The primary identifier for a Press Release Template.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'title' => array(
+        'description' => t('The title of the Template.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'description' => array(
+        'description' => t('Description of the Template.'),
+        'type' => 'text',
+				'size' => 'normal'),
+      'created' => array(
+        'description' => t('The Template creation timestamp.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'modified' => array(
+        'description' => t('The Template modified timestamp.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'deleted' => array(
+        'description' => t('Has this Template been Deleted?'),
+        'type' => 'int',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => 0),
+      'thumbnail_fid' => array(
+        'description' => t('File ID for the uploaded thumbnail.'),
+        'type' => 'int',
+				'length' => 10),
+      'html' => array(
+        'description' => t('HTML for the Template.'),
+        'type' => 'text',
+				'size' => 'big'),
+      'css' => array(
+        'description' => t('Inline Styles.'),
+        'type' => 'text',
+				'size' => 'big'),
+      ),
+
+
+    'unique keys' => array(
+      'template_id' => array('template_id')
+      ),
+    'primary key' => array('template_id'),
+    );
+
+	$schema['pressrelease_email'] = array(
+    'description' => t('Press Release Email Addresses.'),
+    'fields' => array(
+      'email_address_id' => array(
+        'description' => t('The primary identifier for a Press Release Email Address.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'email_address' => array(
+        'description' => t('The Email Address.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'name' => array(
+        'description' => t('The Name associated with this address.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => ''),
+      'description' => array(
+        'description' => t('Description of the Template.'),
+        'type' => 'text',
+				'size' => 'normal'),
+      'created' => array(
+        'description' => t('The Template creation timestamp.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'modified' => array(
+        'description' => t('The Template modified timestamp.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'deleted' => array(
+        'description' => t('Has this Template been Deleted?'),
+        'type' => 'int',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => 0),
+      ),
+
+    'unique keys' => array(
+      'template_id' => array('email_address_id')
+      ),
+    'primary key' => array('email_address_id'),
+    );
+
+	$schema['pressrelease_email_connect'] = array(
+    'description' => t('List of Email Addresses connected to a Group.'),
+    'fields' => array(
+      'email_connect_id' => array(
+        'description' => t('The primary identifier for a Group Email Address connection.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'group_id' => array(
+        'description' => t('Connected Email Address.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'email_address_id' => array(
+        'description' => t('Connected Email Address.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+			),
+    'unique keys' => array(
+      'user_connect_id' => array('email_connect_id')
+      ),
+    'primary key' => array('email_connect_id'),
+    );
+
+	$schema['pressrelease_record'] = array(
+    'description' => t('Record of sent Press Releases.'),
+    'fields' => array(
+      'record_id' => array(
+        'description' => t('The primary identifier for a Press Release record.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'eid' => array(
+        'description' => t('ID of the entity which was sent.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'uid' => array(
+        'description' => t('ID of the user who sent the Press Release.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'date_sent' => array(
+        'description' => t('Timestamp for the day this Press Release was sent.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'send_started' => array(
+        'description' => t('Timestamp for when this Release began the send process.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'send_complete' => array(
+        'description' => t('Timestamp for when this Release finished the send process.'),
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+        'default' => 0),
+      'total_recipients' => array(
+        'description' => t('Total number of addresses that this Press Release was sent to'),
+        'type' => 'int',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => 0),
+      ),
+
+    'unique keys' => array(
+      'template_id' => array('record_id')
+      ),
+    'primary key' => array('record_id'),
+    );
+	return $schema;
+}
+
+
+/**
+* Press Release add send record field
+*/
+//First we need to
+function pressrelease_update_7101(&$sandbox) {
+	$message = '';
+	// First we add the send record field.
+	if (!db_table_exists('pressrelease_send_record')) {
+		$schema['pressrelease_send_record'] = array(
+			'description' => t('Record of sent Press Release groups.'),
+			'fields' => array(
+				'record_id' => array(
+					'description' => t('The primary identifier for a Press Release record.'),
+					'type' => 'serial',
+					'unsigned' => TRUE,
+					'not null' => TRUE),
+				'date_sent' => array(
+					'description' => t('Timestamp for the day this Press Release was sent.'),
+					'type' => 'int',
+					'length' => 11,
+					'not null' => TRUE,
+					'default' => 0),
+				'send_started' => array(
+					'description' => t('Timestamp for when this Release began the send process.'),
+					'type' => 'int',
+					'length' => 11,
+					'not null' => TRUE,
+					'default' => 0),
+				'send_complete' => array(
+					'description' => t('Timestamp for when this Release finished the send process.'),
+					'type' => 'int',
+					'length' => 11,
+					'not null' => TRUE,
+					'default' => 0),
+				'total_recipients' => array(
+					'description' => t('Total number of addresses that this Press Release was sent to.'),
+					'type' => 'int',
+					'length' => 11,
+					'not null' => TRUE,
+					'default' => 0),
+				'file_url' => array(
+					'description' => t('Location of the generated HTML file.'),
+					'type' => 'varchar',
+					'length' => 255,
+					'not null' => TRUE,
+        	'default' => 0),
+				),
+			'unique keys' => array(
+				'record_id' => array('record_id')
+				),
+			'primary key' => array('record_id'),
+			);
+		if(db_create_table('pressrelease_send_record', $schema['pressrelease_send_record'])){
+			$message .= t('pressrelease_send_record table created.');
+		} else {
+			$message .= t('pressrelease_send_record field was not created!');
+		}
+	}
+/*
+	// Now we need to update the total_recipients from the original send table
+	// Previously it was set to 1, rather than 11
+	if(db_change_field('pressrelease_record', 'total_recipients', 'total_recipients',
+		array('length' => '11'), array()
+		)){
+			$message .= t('pressrelease_record table was updated.');
+		} else {
+			$message .= t('pressrelease_record update failed!');
+		}
+*/
+	return $message;
+}

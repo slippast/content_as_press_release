@@ -1,0 +1,13 @@
+name = Press Release
+description = Email content to groups or individuals
+package = Press Release
+version = "7.x-1.1"
+core = "7.x"
+project = "pressrelease"
+
+files[] = pressrelease.module
+files[] = pressrelease.install
+
+dependencies[] = node
+dependencies[] = user
+

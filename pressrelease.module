@@ -1,0 +1,949 @@
+<?php
+// $Id$
+// Press Release module
+
+function absolute_urls_url_outbound_alter(&$path, &$options, $original_path) {
+  $options['absolute'] = TRUE;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function pressrelease_permission() {
+  return array(
+    'administer pressrelease' => array(
+      'title' => t('Administer Press Releases'),
+      'description' => t('Administer the Press Release module.'),
+    ),
+   'send pressrelease' => array(
+      'title' => t('Send Press Releases'),
+      'description' => t('Send Press Releases.'),
+    ),
+    'manipulate pressrelease groups' => array(
+      'title' => t('Manipulate Press Release Groups'),
+      'description' => t('Manipulate Press Release Groups.'),
+    ),
+  );
+}
+
+
+/**
+* Implements hook_theme().
+*/
+function pressrelease_theme($existing, $type, $theme, $path) {
+  $items = array(
+    'theme_pressrelease_preview'  => array(
+			'render element' => 'element',
+      'template' => 'pressrelease-preview',
+			//'arguments' => array(),
+    ),
+  );
+  return $items;
+	//kpr($existing);
+//dpm('pressrelease_theme');
+}
+function theme_pressrelease_preview(&$variables) {
+/*  foreach (element_children($variables['element']['child']) as $item) {
+    $output .= $variables['element']['child'][$item] . $variables['element']['#separator'];
+  }
+ */
+  return $output;
+}
+
+/*
+function theme_pressrelease_send_preview($variables){
+	// Isolate the form definition form the $variables array
+	$form = $variables['form'];
+	kpr($form);
+	$output = '<h2>' . t('Please enter your information below') . '</h2>';
+	// Put the entire structure into a div that can be used for
+	// CSS purposes
+	$output .= '<div id="personal_details">';
+	// Each of the pieces of text is wrapped in a <span>
+	// tag to allow it to be floated left
+	$output .= '<span>' . t('My name is') . '</span>';
+	// Form elements are rendered with drupal_render()
+	$output .= drupal_render($form['first_name']);
+	$output .= drupal_render($form['last_name']);
+	$output .= '<span>' . t('and I am') . '</span>';
+	$output .= drupal_render($form['age']);
+	$output .= '<span>' . t('years old.') . '</span>';
+	$output .= '</div>';
+	// Pass the remaining form elements through drupal_render_children()
+	$output .= drupal_render_children($form);
+
+
+	// return the output
+	return $output;
+}
+*/
+
+
+/**
+* Implements hook_menu().
+*/
+function pressrelease_menu() {
+  $items = array(); 
+
+	// Auto complete menu links
+  $items['pressrelease/user/%'] = array(
+		//'title' => t('User Autocomplete'),
+		//'path' => 'pressrelease/autocomplete/user',
+		//'access arguments' => array('administer pressrelease'),
+		//'access' => array('access content'),
+		'page callback' => 'pressrelease_user_autocomplete',
+		'page arguments' => array(2, 3),
+		'access callback' => 'user_access',
+		'access arguments' => array('access content'),
+		'file' => 'pressrelease.users.inc',
+		'type' => MENU_CALLBACK,
+  );
+
+	// Auto complete menu links
+  $items['pressrelease/user/site/%'] = array(
+		'page callback' => 'pressrelease_site_autocomplete',
+		'page arguments' => array(3, 4),
+		'access callback' => 'user_access',
+		'access arguments' => array('access content'),
+		'file' => 'pressrelease.users.inc',
+		'type' => MENU_CALLBACK,
+  );
+
+	// Auto complete menu links
+  $items['pressrelease/user/email/%'] = array(
+		'page callback' => 'pressrelease_user_email_autocomplete',
+		'page arguments' => array(4, 5),
+		'access callback' => 'user_access',
+		'access arguments' => array('access content'),
+		'file' => 'pressrelease.users.inc',
+		'type' => MENU_CALLBACK,
+  );
+
+
+	// Admin Section
+	// Settings page
+  $items['admin/config/content/pressrelease/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Setup Press Releases.',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('pressrelease_index_settings_form'),
+    'access arguments' => array('administer pressrelease'),
+		'type' => MENU_LOCAL_TASK,
+		'access callback' => TRUE,
+    'expanded' => TRUE,
+    'weight' => -9,
+    'file' => 'pressrelease.admin.inc',
+  );
+
+	// Send Section
+	// Send group default page
+  $items['admin/config/content/pressrelease'] = array(
+    'title' => 'Send Press Releases',
+    'description' => 'Send Press Releases.',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('pressrelease_send_form'),
+    'access arguments' => array('administer pressrelease'),
+    'type' => MENU_NORMAL_ITEM,
+		'access callback' => TRUE,
+    'expanded' => TRUE,
+    'file' => 'pressrelease.send.inc',
+    'weight' => -10,
+  );
+	// Send group of Nodes
+  $items['admin/config/content/pressrelease/send'] = array(
+    'title' => 'Send Releases',
+    'description' => 'Select Press Releases to send, individually or as a group.',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('pressrelease_send_form'),
+    'access arguments' => array('administer pressrelease'),
+		'type' => MENU_DEFAULT_LOCAL_TASK,
+		'access callback' => TRUE,
+    'expanded' => TRUE,
+    'weight' => -20,
+    'file' => 'pressrelease.send.inc',
+  );
+	// Send single Node
+  $items['node/%/node/pressrelease'] = array(
+    'title' => 'Press Release',
+    'title arguments' => array('@tab' => 'Press Release'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_send_form'),
+    'access callback' => 'pressrelease_node_tab_access',
+    'access arguments' => array('send pressrelease'),
+    'weight' => 10,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'pressrelease.send.inc',
+  );
+	// Preview Section
+	// Preview single Node Send
+  $items['node/%/node/pressrelease/preview'] = array(
+    'title' => 'Press Release Preview',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_send_preview'),
+    'access callback' => 'pressrelease_node_tab_access',
+    'access arguments' => array('send pressrelease'),
+    'weight' => 5,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'pressrelease.send.inc',
+  );
+	// Send View
+  $items['admin/config/content/pressrelease/view/%/%/%'] = array(
+    'title' => 'Send Press Release View',
+    'description' => 'Send View as a Press Release.',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('pressrelease_send_form', 5, 6, 7),
+    'access arguments' => array('send pressrelease'),
+		//'type' => MENU_LOCAL_ACTION,
+		'access callback' => TRUE,
+    'file' => 'pressrelease.send.inc',
+    'weight' => -10,
+  );
+	// Preview group send
+  $items['admin/config/content/pressrelease/send/preview'] = array(
+    'title' => 'Preview Releases',
+    'description' => 'Preview Press Releases to send.',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('pressrelease_send_preview'),
+    'access arguments' => array('administer pressrelease'),
+		//'type' => MENU_DEFAULT_LOCAL_TASK,
+		'access callback' => TRUE,
+    'expanded' => TRUE,
+    'file' => 'pressrelease.send.inc',
+  );
+
+
+	// Groups Section
+  $items['admin/config/content/pressrelease/groups'] = array(
+    'title' => 'Groups',
+    'description' => 'Groups of email address and the names of those groups.',
+    'page callback' => 'pressrelease_groups_list',
+    'access arguments' => array('administer pressrelease'),
+		'type' => MENU_LOCAL_TASK,
+    'weight' => -8,
+    'file' => 'pressrelease.groups.inc',
+  );
+  $items['admin/config/content/pressrelease/groups/create'] = array(
+    'title' => 'Add group',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_groups_create_form'),
+    'access arguments' => array('administer pressrelease'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'pressrelease.groups.inc',
+  );
+  $items['admin/config/content/pressrelease/groups/edit/%'] = array(
+    'title' => 'Edit group',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_groups_create_form', 6),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_CALLBACK,
+    'file' => 'pressrelease.groups.inc',
+  );
+  $items['admin/config/content/pressrelease/groups/delete/%'] = array(
+    'title' => 'Delete group',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_groups_delete_form'),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_NORMAL_ITEM,
+    'file' => 'pressrelease.groups.inc',
+  );
+  $items['admin/config/content/pressrelease/groups/users/%'] = array(
+    'title' => 'Add users',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_form', 6),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_LOCAL_ACTION,
+    'file' => 'pressrelease.users.inc',
+  );
+
+/*
+  $items['admin/config/content/pressrelease/groups/users/%'] = array(
+    'title' => 'Users',
+    'description' => 'Groups of email address and the names of those groups.',
+    'page callback' => 'pressrelease_users_form',
+    'page arguments' => array('pressrelease_users_form', 7),
+    'access arguments' => array('administer pressrelease'),
+		'type' => MENU_LOCAL_TASK,
+    'weight' => 5,
+    'file' => 'pressrelease.groups.inc',
+  );
+*/
+
+	// Users Section
+  $items['admin/config/content/pressrelease/users'] = array(
+    'title' => 'Users',
+    'description' => 'Show all Email Addresses.',
+    'page callback' => 'pressrelease_users_email_list_all',
+    'access arguments' => array('administer pressrelease'),
+		'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+    'file' => 'pressrelease.users.inc',
+  );
+  $items['admin/config/content/pressrelease/users/email/all'] = array(
+    'title' => 'List all email addresses',
+		//'page callback' => 'drupal_get_form',
+    //'page arguments' => array('pressrelease_users_email_list', 7),
+    'description' => 'Email address from this group.',
+    'page callback' => 'pressrelease_users_email_list_all',
+		//'page arguments' => array(7),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_LOCAL_TASK,
+    'file' => 'pressrelease.users.inc',
+		'weight' => 0,
+  );
+  $items['admin/config/content/pressrelease/users/email/list/%'] = array(
+    'title' => 'List email addresses',
+		//'page callback' => 'drupal_get_form',
+    //'page arguments' => array('pressrelease_users_email_list', 7),
+    'description' => 'Email address from this group.',
+    'page callback' => 'pressrelease_users_email_list',
+		'page arguments' => array(7),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_LOCAL_TASK,
+    'file' => 'pressrelease.users.inc',
+		'weight' => 0,
+  );
+/*
+  $items['admin/config/content/pressrelease/users/email/add/%'] = array(
+    'title' => 'Add email addresses',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_email_add', 7),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_LOCAL_TASK,
+    'file' => 'pressrelease.users.inc',
+		'weight' => 1,
+  );
+*/
+  $items['admin/config/content/pressrelease/users/email/list/%/add'] = array(
+    'title' => 'Add email addresses',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_email_add', 7),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_LOCAL_TASK,
+		'type' => MENU_LOCAL_ACTION,
+    'file' => 'pressrelease.users.inc',
+		'weight' => 1,
+  );
+  $items['admin/config/content/pressrelease/users/email/edit/%/%'] = array(
+    'title' => 'Edit email addresses',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_email_edit', 7, 8),
+    'access arguments' => array('administer pressrelease'),
+    'file' => 'pressrelease.users.inc',
+  );
+  $items['admin/config/content/pressrelease/users/email/remove/%/%'] = array(
+    'title' => 'Remove email address',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_email_remove', 7, 8),
+    'access arguments' => array('administer pressrelease'),
+    'file' => 'pressrelease.users.inc',
+  );
+  $items['admin/config/content/pressrelease/users/email/delete/%/%'] = array(
+    'title' => 'Delete email address',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_email_delete',7, 8),
+    'access arguments' => array('administer pressrelease'),
+    'file' => 'pressrelease.users.inc',
+  );
+
+
+	// site users
+  $items['admin/config/content/pressrelease/users/site/list/%'] = array(
+    'title' => 'List connected site users',
+    'description' => 'Site users connected to this group.',
+    'page callback' => 'pressrelease_users_site_list',
+		'page arguments' => array(7),
+    'access arguments' => array('administer pressrelease'),
+    'file' => 'pressrelease.users.inc',
+		'weight' => 0,
+  );
+  $items['admin/config/content/pressrelease/users/site/add/%'] = array(
+    'title' => 'Add site users',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_site_add', 7),
+    'access arguments' => array('administer pressrelease'),
+    //'type' => MENU_LOCAL_TASK,
+    'file' => 'pressrelease.users.inc',
+		'weight' => 11,
+  );
+  $items['admin/config/content/pressrelease/users/site/remove/%/%'] = array(
+    'title' => 'Remove site users',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_users_site_remove', 7, 8),
+    'access arguments' => array('administer pressrelease'),
+    'file' => 'pressrelease.users.inc',
+		'weight' => 12,
+  );
+
+	// Template Section
+  $items['admin/config/content/pressrelease/templates'] = array(
+    'title' => 'Email Templates',
+    'description' => 'Setup custom email templates for content delivery.',
+    'page callback' => 'pressrelease_template_list',
+    'access arguments' => array('administer pressrelease'),
+		'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+    'file' => 'pressrelease.templates.inc',
+  );
+  $items['admin/config/content/pressrelease/templates/create'] = array(
+    'title' => 'Add template',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_templates_create_form'),
+    'access arguments' => array('administer pressrelease'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'pressrelease.templates.inc',
+  );
+  $items['admin/config/content/pressrelease/templates/edit/%'] = array(
+    'title' => 'Edit template',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_templates_create_form', 6),
+    'access arguments' => array('administer pressrelease'),
+    'type' => MENU_CALLBACK,
+    'file' => 'pressrelease.templates.inc',
+  );
+  $items['admin/config/content/pressrelease/templates/delete/%'] = array(
+    'title' => 'Delete template',
+		'page callback' => 'drupal_get_form',
+    'page arguments' => array('pressrelease_templates_delete_form'),
+    'access arguments' => array('administer pressrelease'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'pressrelease.templates.inc',
+  );
+
+  return $items;
+} 
+
+
+
+
+
+
+/**
+* Control tab visibility on node pages
+*/
+function pressrelease_node_tab_access($access_args) {
+  if (!user_access('send pressrelease')) {
+    return FALSE;
+  }
+
+	if (arg(0)== 'node' && is_numeric(arg(1))) {
+		$node =  node_load(arg(1));
+		$access_check = variable_get('pressrelease_content_types', 1);
+		$node_type = $node->type;
+		if(!in_array($node_type, $access_check, TRUE)) {
+			return FALSE;
+		} else {
+			return TRUE;
+		}
+	}
+}
+
+
+// Private function to handle cancel button for groups
+function pressrelease_form_cancel_groups(){
+	drupal_goto('admin/config/content/pressrelease/groups');
+	}
+// Private function to handle cancel button for templates
+function pressrelease_form_cancel_templates(){
+	drupal_goto('admin/config/content/pressrelease/templates');
+	}
+
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * This enables a custom display just for the Press Releases
+ *
+ */
+function pressrelease_entity_info_alter(&$entity_info) {
+	$entity_info['node']['view modes']['pressrelease'] = array(
+		'label' => t('Press Release'),
+		'custom settings' => TRUE,
+	);
+	$entity_info['node']['view modes']['pressrelease_tease'] = array(
+		'label' => t('Press Release Teaser'),
+		'custom settings' => TRUE,
+	);
+/*
+	$access_check = variable_get('pressrelease_content_types', 1);
+	if(in_array(arg(4), $access_check, TRUE)) {
+			$entity_info['node']['view modes']['pressrelease'] = array(
+				'label' => t('Press Release'),
+				'custom settings' => TRUE,
+			);
+	}
+*/
+}
+
+
+
+/*
+function pressrelease_settings_admin() {
+
+	$output['#markup'] = t('This is the Press Release module settings page.<hr />@todo:<br />1 - Assign to content types.<br />2 - Add display type to content to selected content<br />3 - Add user groups interface');
+	$output['index_settings_form'] = drupal_get_form('pressrelease_index_settings_form');
+
+kpr($output);
+
+	return $output;
+}
+*/
+
+
+
+/**
+ * Form for the Press Release User edit.
+ * Edits the user profile
+ * Allows multiple groups to be added/removed at one time
+ */
+function pressrelease_form_alter(&$form, &$form_state, $form_id)  {
+
+//debug($form, '$form contents:', TRUE);
+
+if(module_exists('devel')) {
+  //dsm($form_id);  // print form ID to messages
+}
+
+	// Check to see if users are enabled
+	$enabled = variable_get('pressrelease_roles_enable', array());
+	if($enabled == 1) {
+
+		// Switch for the various edited forms
+		switch ($form_id)  {	
+			case 'user_profile_form':
+				// Need the user info accessable
+				$user = $form_state['user'];
+
+				$form['#submit'][] = 'pressrelease_user_form_alter_submit';
+
+				// Groups section of this form
+				$form['pressrelease'] = array(
+					'#type' => 'fieldset',
+					'#title' => t('Available Press Release groups'),
+					'#collapsible' => TRUE,
+					'#collapsed' => FALSE,
+					);
+
+				// Build checkbox options - show all groups
+				// Get all of the items for the row
+				$query = db_select('pressrelease_group', 'g')
+					->fields ('g', array (
+						'group_id',
+						'title',
+						));
+				$group_items = $query->execute();			
+				// Build full list array
+				$groups = array();
+				foreach($group_items as $group_item) {
+					$groups[$group_item->group_id] = $group_item->title;
+					}
+
+				// Do a quick check to see if the user is already connected
+				$results = array();
+				$query = db_select('pressrelease_user_connect', 'c')
+					->fields('c', array(
+						'group_id',
+						))
+					->condition('user_id', $user->uid);
+				$group_defaults = $query->execute();
+
+				// Build defaults array
+				$defaults = array();
+				foreach($group_defaults as $group_default) {
+					$defaults[$group_default->group_id] = $group_default->group_id;
+					}
+
+				// Show the available groups and defaults
+				$form['pressrelease']['groups']['#tree'] = TRUE;
+				$form['pressrelease']['groups'] = array(
+					'#type' => 'checkboxes',
+					'#options' => $groups,
+					'#default_value' => array_keys($defaults),
+					'#description' => t('Users can be added to or removed from Press Release groups here.'),
+				);
+			break;
+			case 'user_register_form':
+				// See if this is enabled for annoymous users, if so show them the group options.
+				$anon_enabled = variable_get('pressrelease_roles', array());
+				if($anon_enabled[1] == 1) {
+					$form['#submit'][] = 'pressrelease_user_register_form_alter_submit';
+					// Groups section of this form
+					$form['pressrelease'] = array(
+						'#type' => 'fieldset',
+						'#title' => t('Available Press Release groups'),
+						'#collapsible' => TRUE,
+						'#collapsed' => FALSE,
+						);
+					// Get the default values of the form
+					$result = db_select('pressrelease_group', 'g')
+						->fields('g', array(
+							'disable_roles',
+							))
+						->execute()
+						->fetchAssoc();
+						$disable_roles = unserialize($result['disable_roles']);
+					// Build checkbox options - show all groups
+					// Get all of the items for the row
+					$query = db_select('pressrelease_group', 'g')
+						->fields ('g', array (
+							'group_id',
+							'title',
+							));
+					$group_items = $query->execute();
+					// Build full list array
+					$groups = array();
+					foreach($group_items as $group_item) {
+							if(!in_array($group_item->group_id, $disable_roles)){
+								$groups[$group_item->group_id] = $group_item->title;
+								}
+						}
+					// Show the available groups and defaults
+					$form['pressrelease']['groups']['#tree'] = TRUE;
+					$form['pressrelease']['groups'] = array(
+						'#type' => 'checkboxes',
+						'#options' => $groups,
+						'#description' => t('Add or remove Press Release groups here.'),
+					);
+				}
+			break;
+		}
+  }
+}
+/**
+ * Form Submit for the Press Release User submit.
+ */
+function pressrelease_user_form_alter_submit($form, &$form_state) {
+  $form_values = $form_state['values'];
+	$groups = $form_values['groups'];
+	// Switch to ensure there is no duplication
+	foreach($groups as $group_id => $group) {
+		switch ($group) {
+			case 0:
+				//drupal_set_message('<pre>not assigned: '.print_r($group_id, TRUE).'</pre>');
+				// Check to see if the group was removed
+				$query = db_select('pressrelease_user_connect', 'c')
+					->fields ('c', array (
+						'user_connect_id',
+						))
+					->condition('user_id', $form_values['uid'])
+					->condition('group_id', $group_id)
+					->execute();
+				$check = $query->fetchField();
+
+				//drupal_set_message('<pre>check: '.print_r($check, TRUE).'</pre>');
+					if($check) {
+						//drupal_set_message('<pre>DELETE! '.print_r($check, TRUE).'</pre>');
+						// Delete the email address connections
+						$num_connect_deleted = db_delete('pressrelease_user_connect')
+							->condition('user_id', $form_values['uid'])
+							->condition('group_id', $group_id)
+							->execute();
+					}
+				break;
+			default:
+				//drupal_set_message('<pre>assigned: '.print_r($group_id, TRUE).'</pre>');
+				// Check to see if the group is already added
+				$query = db_select('pressrelease_user_connect', 'c')
+					->fields ('c', array (
+						'user_connect_id',
+						))
+					->condition('user_id', $form_values['uid'])
+					->condition('group_id', $group_id)
+					->execute();
+				$check = $query->fetchField();
+				//drupal_set_message('<pre>check: '.print_r($check, TRUE).'</pre>');
+					if(!$check) {
+						//drupal_set_message('<pre>INSERT! '.print_r($check, TRUE).'</pre>');
+						$insert = db_insert('pressrelease_user_connect')
+							->fields(array(
+								'group_id' => $group_id,
+								'user_id' => $form_values['uid']
+							))
+							->execute();
+					}
+				break;
+		}
+	}
+}
+
+/**
+ * Form Submit for the Press Release User registration submit.
+ */
+function pressrelease_user_register_form_alter_submit($form, &$form_state) {
+	$form_values = $form_state['values'];
+	$groups = $form_values['groups'];
+	//drupal_set_message('<pre>form_values: '.print_r($form_values, TRUE).'</pre>');
+
+	$groups = $form_values['groups'];
+	// Switch to ensure there is no duplication
+	foreach($groups as $group_id => $group) {
+		$insert = db_insert('pressrelease_user_connect')
+			->fields(array(
+				'group_id' => $group_id,
+				'user_id' => $form_values['uid']
+			))
+			->execute();
+	}
+}
+
+////////////////////////////////////////////////////////
+
+
+// Private function to find all content types that have 'Email' fields
+function newsletter_get_content_types() {
+	$fields = field_info_fields();
+	$content = array();
+
+	foreach ($fields as $field_name => $field_data) {
+		// Filter out stuff that doesn't include the email module.
+		if($field_data['module'] == 'email') {
+			$bundle = array_keys($field_data['bundles']);
+			$bundle = $bundle[0]; // I just want the name here otherwise Drupal hates me.
+
+			$content_type = $field_data['bundles'][$bundle][0];
+			//drupal_set_message('<pre>content type:<br />'.print_r($content_type, TRUE).'</pre><hr />');
+
+			// Get the human readable name
+			$entity_info = entity_get_info($bundle);
+			//kpr($entity_info);
+			$content_type_readable = $entity_info['bundles'][$content_type]['label']; // Assign it a variable
+			$content_type_key = "$bundle," . $field_data['bundles'][$bundle][0] . ",$content_type_readable";
+			// Build the general list
+			//$content_type_list["$bundle,".$field_data['bundles'][$bundle][0].",$content_type_readable"] = $content_type_readable . ' (' . $bundle . ')';
+			$content_type_list[$content_type_key] = $content_type_readable . ' (' . $bundle . ')';
+
+			// Build a multidimentional array, in case I need it.
+			if(!in_array($bundle, $content, TRUE)) {
+					$content_type_array[$bundle][$content_type] = $content_type_readable;
+			}
+		}
+	}
+//drupal_set_message('<pre>type list:<br />'.print_r($content_type_list, TRUE).'</pre><hr />');
+//drupal_set_message('<pre>content type array:<br />'.print_r($content_type_array, TRUE).'</pre><hr />');
+//return $content_type_array;
+return $content_type_list;
+}
+
+
+// Private function to display the exclude list for groups.
+function group_get_content_types($content) {
+	foreach($content as $key => $bundle) {		
+		if($bundle != '0') {
+			$data = explode(",", $key);
+			//kpr($bundle);
+			//kpr($data);
+			$bundle = $data[0];
+			$content_type_machine = $data[1];
+			$content_type_readable = $data[2];
+			$options[$content_type_machine] = $content_type_readable . ' (' . $bundle . ')';
+		}
+	}
+	return $options;
+}
+
+// Private function to display the exclude list for groups.
+function group_get_role_types($content) {
+	foreach($content as $key => $bundle) {
+		if($bundle != '0' && !empty($bundle)) {
+			$role = user_role_load($key);
+			$role_name = $role->name;
+			//dpm($bundle);
+			//dpm($role_name);
+			$options[$key] = $role_name;
+		}
+	}
+	if(!empty($options)) {
+		return $options;
+	}
+}
+
+// Private function to do a general check to see if roles are enabled
+function pressrelease_roles_access_check() {
+	$check = variable_get('pressrelease_roles_enable', array());
+		if($check == 1) {
+			return TRUE;
+	}
+}
+// Private function to do a general check to see if content is enabled
+function pressrelease_content_access_check() {
+	$check = variable_get('pressrelease_content_enable', array());
+		if($check == 1) {
+			return TRUE;
+	}
+}
+// Validate email address
+function pressrelease_validate_email($email){
+	if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
+		return true;
+	}
+}
+
+
+
+
+/**
+ * Build the collection of email addresses
+ * Use the group list and the manually inputted addresses
+ * TODO: Need to add records to the database
+ */
+function pressrelease_collect($group_list, $addresses) {
+	// We need some default arrays setup
+	$email_collection = array();
+	$user_collection = array();
+	$content_collection = array();
+	$address_collection = array();
+
+	// Get the group IDs
+	foreach($group_list as $group_id) {
+		if($group_id != 0){
+				// Count connected email addresses
+		$email_query = db_select('pressrelease_email_connect', 'g')
+			->condition ('group_id', $group_id)
+			->fields ('g', array (
+				'email_address_id',
+				))
+			->execute();
+
+		// Handle the email group
+		if(!isset($email_group)) {
+			$email_group = $email_query->fetchAllKeyed(0,0);
+				} else {
+			$email_group_add = $email_query->fetchAllKeyed(0,0);
+				foreach($email_group_add as $key => $value) {
+					if(!in_array($value, $email_group)) {
+						$email_group[$key] = $value;
+					}
+				}
+			}
+
+			// Count connected users
+			$user_query = db_select('pressrelease_user_connect', 'g')
+				->condition ('group_id', $group_id)
+				->fields ('g', array (
+					'user_id',
+					))
+				->execute();
+
+				if(!isset($user_group)) {
+					$user_group = $user_query->fetchAllKeyed(0,0);
+					} else {
+					$user_group_add = $user_query->fetchAllKeyed(0,0);
+						foreach($user_group_add as $key => $value) {
+							//drupal_set_message('<pre>value: '.print_r($value, TRUE).'</pre>');
+							if(!in_array($value, $user_group)) {
+								$user_group[$key] = $value;
+							}
+						}
+					}
+				// We now have our collections so prepare to send them.
+				if(empty($email_group) && empty($user_group)){
+					drupal_set_message(t('There are no email addresses in the groups you selected!'));
+				} else {
+					// Collect email addresses
+					$collection = array();
+					foreach($email_group as $email_address_id) {
+						// Compile email addresses
+						$query = db_select('pressrelease_email', 'e')
+							->condition ('email_address_id', $email_address_id)
+							->fields ('e', array (
+								'email_address',
+								))
+							->execute();
+							//$results = $query->fetchCol();
+							$email = $query->fetchField();
+							if(pressrelease_validate_email($email)){
+								$email_collection[$email_address_id] = $email;
+							} else {
+								$invalid[] = $email;
+							}
+						}
+					// Collect user email addresses
+					foreach($user_group as $uid) {
+						$user_data = user_load($uid);
+						if($user_data){
+							$email = $user_data->mail;
+							if(pressrelease_validate_email($email)){
+								$user_collection[$uid] = $email;
+							} else {
+								$invalid[] = $email;
+							}
+						}
+					}
+				}
+			$content_collection = array();
+			$content_count = '0';
+			}
+		}
+
+	// Check the user-submitted email addresses
+	$address_collection = array();
+	foreach(explode(',', $addresses) as $email) {
+		$email = trim($email);
+		if(pressrelease_validate_email($email)){
+			$address_collection[] = $email;
+		} else {
+			$invalid[] = $email;
+		}
+	}
+
+	if(!empty($email_collection) || !empty($user_collection) || !empty($content_collection) || !empty($address_collection)){
+		// Build the main email collection, filter results, eliminate duplicates
+		$collection = array_values(array_filter(array_unique(array_merge($email_collection, $user_collection, $content_collection, $address_collection))));
+		$invalid_count = count($invalid);
+			if(!$invalid['0']){
+				$invalid_count = 0;
+			}
+		$collection_count = count($collection);
+		/*
+		drupal_set_message('<pre>email_collection: '.print_r($email_collection, TRUE).'</pre><hr />');
+		drupal_set_message('<pre>user_collection: '.print_r($user_collection, TRUE).'</pre><hr />');
+		drupal_set_message('<pre>address_collection: '.print_r($address_collection, TRUE).'</pre><hr />');
+		
+		drupal_set_message('<pre>invalid addresses: '.print_r($invalid, TRUE).'</pre>');
+		drupal_set_message('<pre>invalid_count: '.print_r($invalid_count, TRUE).'</pre><hr />');
+		
+		drupal_set_message('<pre>collection: '.print_r($collection, TRUE).'</pre>');
+		drupal_set_message('<pre>collection_count: '.print_r($collection_count, TRUE).'</pre>');
+		*/
+		}
+	return $collection;
+}
+
+/**
+ * Implementation of hook_mail().
+ */
+function pressrelease_mail($key, &$message, $params) {
+	global $user;
+  $message['headers']['Reply-To'] = $user->mail;
+}
+
+
+/**
+ * Custom function to ensure absolute URLS
+ */
+function pressrelease_fix_urls($txt) {
+	// Code used from: http://phpepe.com/2010/05/drupal-transform-relative-links-to.html
+	// Kind of an ugly method but it works!
+	global $base_url;
+
+	$needles = array('href="', 'about="');
+	$new_txt = '';
+	if(substr($base_url,-1) != '/') $base_url .= '/';
+	$new_base_url = $base_url;
+	$base_url_parts = parse_url($base_url);
+
+	foreach($needles as $needle){
+		while($pos = strpos($txt, $needle)){
+			$pos += strlen($needle);
+				if(substr($txt,$pos,7) != 'http://' && substr($txt,$pos,8) != 'https://' && substr($txt,$pos,6) != 'ftp://' && substr($txt,$pos,9) != 'mailto://'){
+					if(substr($txt,$pos,1) == '/') $new_base_url = $base_url_parts['scheme'].'://'.$base_url_parts['host'];
+					$new_txt .= substr($txt,0,$pos).$new_base_url;
+					} else {
+					$new_txt .= substr($txt,0,$pos);
+					}
+				$txt = substr($txt,$pos);
+			}
+		$txt = $new_txt.$txt;
+		$new_txt = '';
+	}
+	return $txt;
+}
